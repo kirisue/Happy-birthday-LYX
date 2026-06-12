@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<!--
+  🌌 衍天宗 · 星盘起卦 — 二十岁生辰吉乐
+  点击起卦 → 星盘推演 → 火/土/水 三卦各33%
+  衍天宗元素: 罗盘 八卦 魂灯 星宿 紫微垣 符箓
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>衍天宗 · 星盘起卦 — 生辰吉乐</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --gold:#c9a24e;--gl:#f0d78c;--gp:#faf0d7;
+  --purple:#7b5ea7;--purple-deep:#3e2868;
+  --seal:#c43a3a;
+  --t1:#e8e0d0;--t2:#b0a090;--bg:#060a18;
+  --fire:#e85d3a;--fire2:#ffaa70;
+  --earth:#c9a24e;--earth2:#e8c97a;
+  --water:#5b8cbf;--water2:#a0d2f0;
+}
+body{
+  font-family:'Noto Serif SC','STSong','SimSun','KaiTi','STKaiti',serif;
+  background:var(--bg);color:var(--t1);
+  width:100vw;height:100vh;overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* ── Canvas ── */
+#cvs{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0}
+#vignette{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 45%,transparent 35%,rgba(6,4,20,.55) 72%,rgba(6,4,20,.85) 100%);
+}
+
+/* ── SCREENS ── */
+.screen{
+  position:fixed;top:0;left:0;width:100%;height:100%;z-index:3;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  padding:24px;text-align:center;
+  transition:opacity .4s;
+}
+.screen.active{display:flex}
+
+/* ── IDLE ── */
+#idle-screen{gap:clamp(10px,2vh,18px)}
+#idle-screen .avatar-ring{
+  width:clamp(100px,22vw,150px);height:clamp(100px,22vw,150px);
+  border-radius:50%;overflow:hidden;
+  border:3px solid var(--gold);
+  box-shadow:0 0 0 6px rgba(201,162,78,.15),0 0 40px rgba(201,162,78,.22),0 0 80px rgba(120,90,167,.15);
+  animation:avatarGlow 3s ease-in-out infinite;
+}
+@keyframes avatarGlow{
+  0%,100%{box-shadow:0 0 0 6px rgba(201,162,78,.15),0 0 40px rgba(201,162,78,.22),0 0 80px rgba(120,90,167,.15)}
+  50%{box-shadow:0 0 0 8px rgba(201,162,78,.25),0 0 55px rgba(201,162,78,.35),0 0 100px rgba(120,90,167,.25)}
+}
+#idle-screen .avatar-ring img{width:100%;height:100%;object-fit:cover}
+
+#idle-screen .info-line{
+  font-size:clamp(.8rem,1.4vw,.9rem);letter-spacing:.2em;color:var(--t2);
+}
+#idle-screen .info-title{
+  font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;letter-spacing:.08em;
+  background:linear-gradient(180deg,#faf0d7 0%,#e8c97a 30%,#c9a24e 60%,#8b6914 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+  background-clip:text;
+  filter:drop-shadow(0 0 14px rgba(212,168,67,.35));
+}
+
+/* ── Trigrams row ── */
+.trigrams-row{
+  display:flex;gap:clamp(4px,1.5vw,12px);
+  font-size:clamp(1.2rem,3vw,2rem);color:rgba(201,162,78,.35);
+  letter-spacing:2px;
+}
+
+/* ── BUTTON ── */
+.btn-divine{
+  position:relative;
+  padding:clamp(10px,2vh,16px) clamp(32px,8vw,56px);
+  font-family:inherit;font-size:clamp(1.1rem,2.5vw,1.5rem);font-weight:900;
+  letter-spacing:.25em;color:var(--gp);
+  background:transparent;
+  border:2px solid var(--gold);
+  border-radius:4px;
+  cursor:pointer;
+  transition:all .3s;
+  box-shadow:0 0 20px rgba(201,162,78,.15),inset 0 0 20px rgba(201,162,78,.05);
+}
+.btn-divine:hover{
+  background:rgba(201,162,78,.08);
+  box-shadow:0 0 35px rgba(201,162,78,.3),inset 0 0 30px rgba(201,162,78,.1);
+  transform:scale(1.04);
+}
+.btn-divine:active{transform:scale(.96)}
+
+.btn-divine .corner{
+  position:absolute;width:10px;height:10px;
+  border-color:var(--gold);border-style:solid;
+}
+.btn-divine .corner.tl{top:-2px;left:-2px;border-width:2px 0 0 2px}
+.btn-divine .corner.tr{top:-2px;right:-2px;border-width:2px 2px 0 0}
+.btn-divine .corner.bl{bottom:-2px;left:-2px;border-width:0 0 2px 2px}
+.btn-divine .corner.br{bottom:-2px;right:-2px;border-width:0 2px 2px 0}
+
+/* ── DIVINING ── */
+#divining-screen{gap:16px}
+#divining-screen .divining-text{
+  font-size:clamp(1rem,2vw,1.3rem);letter-spacing:.2em;color:var(--gl);
+  animation:divinePulse .8s ease-in-out infinite;
+}
+@keyframes divinePulse{
+  0%,100%{opacity:.6;filter:drop-shadow(0 0 6px rgba(240,215,140,.3))}
+  50%{opacity:1;filter:drop-shadow(0 0 20px rgba(240,215,140,.7))}
+}
+#divining-screen .trigram-spin{
+  font-size:clamp(3rem,8vw,5rem);
+  animation:trigramSpin .2s linear infinite;
+  color:var(--gl);
+  filter:drop-shadow(0 0 20px rgba(240,215,140,.5));
+}
+@keyframes trigramSpin{
+  0%{transform:rotate(0deg)}
+  100%{transform:rotate(360deg)}
+}
+
+/* ── RESULT ── */
+#result-screen{gap:clamp(8px,1.5vh,14px)}
+#result-screen .result-trigram{
+  font-size:clamp(3.5rem,9vw,6rem);
+  animation:resultReveal .6s cubic-bezier(.175,.885,.32,1.275) forwards;
+  opacity:0;transform:scale(.3);
+}
+@keyframes resultReveal{
+  0%{opacity:0;transform:scale(.3) rotate(-30deg)}
+  100%{opacity:1;transform:scale(1) rotate(0deg)}
+}
+#result-screen .result-title{
+  font-size:clamp(1.6rem,4vw,2.4rem);font-weight:900;letter-spacing:.12em;
+}
+#result-screen .result-element{
+  font-size:clamp(.85rem,1.5vw,1rem);letter-spacing:.15em;
+}
+#result-screen .result-poetry{
+  max-width:min(500px,90vw);
+  font-size:clamp(.9rem,1.6vw,1.05rem);line-height:2.2;color:var(--t2);
+  margin:4px 0;
+}
+#result-screen .result-blessing{
+  font-size:clamp(1rem,1.8vw,1.2rem);font-weight:700;letter-spacing:.06em;
+  margin-top:4px;
+}
+#result-screen .divider{
+  width:clamp(60px,15vw,120px);height:1px;
+  background:linear-gradient(90deg,transparent,currentColor,transparent);
+  opacity:.4;
+}
+
+/* Color themes per element */
+.theme-fire .result-trigram,.theme-fire .result-title,
+.theme-fire .result-element,.theme-fire .result-blessing{color:var(--fire)}
+.theme-fire .btn-divine{border-color:var(--fire);color:var(--fire2);box-shadow:0 0 20px rgba(232,93,58,.2)}
+.theme-fire .divider{background:linear-gradient(90deg,transparent,var(--fire),transparent)}
+
+.theme-earth .result-trigram,.theme-earth .result-title,
+.theme-earth .result-element,.theme-earth .result-blessing{color:var(--earth)}
+.theme-earth .btn-divine{border-color:var(--earth);color:var(--earth2);box-shadow:0 0 20px rgba(201,162,78,.2)}
+.theme-earth .divider{background:linear-gradient(90deg,transparent,var(--earth),transparent)}
+
+.theme-water .result-trigram,.theme-water .result-title,
+.theme-water .result-element,.theme-water .result-blessing{color:var(--water)}
+.theme-water .btn-divine{border-color:var(--water);color:var(--water2);box-shadow:0 0 20px rgba(91,140,191,.2)}
+.theme-water .divider{background:linear-gradient(90deg,transparent,var(--water),transparent)}
+
+/* ── Special 1%: 命定之星 · 双子 ── */
+.theme-special .result-trigram{
+  color:transparent;
+  background:linear-gradient(135deg,#faf0d7 0%,#e8c97a 25%,#f5c4d3 50%,#d4a843 75%,#faf0d7 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:specialGlow 1.5s ease-in-out infinite, resultReveal .6s cubic-bezier(.175,.885,.32,1.275) forwards;
+  filter:none;
+}
+.theme-special .result-title{
+  color:transparent;
+  background:linear-gradient(135deg,#faf0d7 0%,#f5c4d3 30%,#e8c97a 60%,#faf0d7 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 0 20px rgba(245,196,211,.4));
+}
+.theme-special .result-element{color:#f5c4d3}
+.theme-special .result-blessing{
+  color:transparent;
+  background:linear-gradient(90deg,#faf0d7,#e8c97a,#f5c4d3,#e8c97a,#faf0d7);
+  background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:shimmerMove 2s linear infinite;
+}
+.theme-special .btn-divine{
+  border-color:#f5c4d3;color:#faf0d7;
+  box-shadow:0 0 25px rgba(245,196,211,.25),inset 0 0 25px rgba(245,196,211,.06);
+}
+.theme-special .divider{
+  background:linear-gradient(90deg,transparent,#f5c4d3,var(--gold),#f5c4d3,transparent);
+}
+.theme-special .result-poetry{color:#d5c8b8}
+
+@keyframes specialGlow{
+  0%,100%{filter:drop-shadow(0 0 12px rgba(245,196,211,.35)) drop-shadow(0 0 24px rgba(232,201,122,.25))}
+  50%{filter:drop-shadow(0 0 22px rgba(245,196,211,.6)) drop-shadow(0 0 40px rgba(232,201,122,.45))}
+}
+@keyframes shimmerMove{
+  0%{background-position:0% 50%}
+  100%{background-position:200% 50%}
+}
+
+/* ── Seal ── */
+.seal{
+  display:inline-flex;flex-direction:column;
+  writing-mode:vertical-rl;text-orientation:upright;
+  border:2.5px solid var(--seal);color:var(--seal);
+  padding:11px 7px;font-family:'Noto Serif SC','STSong','SimSun',serif;
+  font-size:.78rem;font-weight:bold;letter-spacing:3px;line-height:1.6;
+  opacity:.8;box-shadow:inset 0 0 10px rgba(196,58,58,.2),0 0 12px rgba(196,58,58,.12);
+  transform:rotate(2deg);
+}
+
+/* ── Spark particles ── */
+.spark{
+  position:fixed;pointer-events:none;z-index:10;
+  width:4px;height:4px;background:var(--gl);border-radius:50%;
+  animation:sparkBurst .8s ease-out forwards;
+}
+@keyframes sparkBurst{
+  0%{opacity:1;transform:translate(0,0) scale(1)}
+  100%{opacity:0;transform:translate(var(--sx),var(--sy)) scale(0)}
+}
+
+/* ── a11y ── */
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+}
+@media(max-width:768px){
+  .screen{padding:18px}
+}
+</style>
+</head>
+<body>
+
+<canvas id="cvs" aria-hidden="true"></canvas>
+<div id="vignette" aria-hidden="true"></div>
+
+<!-- ═══════════ IDLE SCREEN ═══════════ -->
+<div class="screen active" id="idle-screen">
+  <div class="avatar-ring">
+    <img src="1.jpeg" alt="头像">
+  </div>
+  <span class="info-line">衍天宗 · 紫微垣</span>
+  <h1 class="info-title">星 盘 起 卦</h1>
+  <span class="info-line">丙午年 · 四月廿八 · 二十岁生辰 · ♊ 双子</span>
+
+  <div class="trigrams-row" aria-hidden="true">
+    ☰ ☷ ☲ ☵ ☳ ☴ ☶ ☱
+  </div>
+
+  <button class="btn-divine" id="btn-start" onclick="startDivine()">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    起 卦
+  </button>
+
+  <div class="seal" aria-label="农历日期印章">
+    丙<br>午<br>年<br>四<br>月<br>廿<br>八
+  </div>
+</div>
+
+<!-- ═══════════ DIVINING SCREEN ═══════════ -->
+<div class="screen" id="divining-screen">
+  <div class="trigram-spin" id="spin-trigram">☯</div>
+  <p class="divining-text">星 盘 推 演 中</p>
+  <p style="font-size:.8rem;color:var(--t2);letter-spacing:.15em;">魂灯引路 · 星轨卜算</p>
+</div>
+
+<!-- ═══════════ RESULT SCREEN ═══════════ -->
+<div class="screen theme-fire" id="result-screen">
+  <div class="result-trigram" id="res-trigram">☲</div>
+  <h2 class="result-title" id="res-title"></h2>
+  <span class="result-element" id="res-element"></span>
+  <div class="divider"></div>
+  <div class="result-poetry" id="res-poetry"></div>
+  <div class="result-blessing" id="res-blessing"></div>
+  <div class="divider"></div>
+  <button class="btn-divine" id="btn-retry" onclick="startDivine()">
+    <span class="corner tl"></span><span class="corner tr"></span>
+    <span class="corner bl"></span><span class="corner br"></span>
+    再 起 一 卦
+  </button>
+  <p style="font-size:.75rem;color:var(--t2);margin-top:4px;">生辰吉乐 · 岁岁年年</p>
+</div>
+
+<script>
+/* ==========================================
+   🌌 衍天宗星象引擎
+   ========================================== */
+(function(){
+const c=document.getElementById('cvs');
+const ctx=c.getContext('2d');
+let W,H;
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;}
+resize();window.addEventListener('resize',resize);
+
+// Stars
+const STAR_N=150;
+const stars=[];
+for(let i=0;i<STAR_N;i++){
+  stars.push({
+    x:Math.random()*2400-200,y:Math.random()*1500-200,
+    r:.35+Math.random()*2.2,
+    ba:.12+Math.random()*.6,a:0,
+    ts:.005+Math.random()*.018,to:Math.random()*Math.PI*2,
+    depth:.2+Math.random()*.8
+  });
+}
+
+// Astrolabe
+let rot=0;
+window._astroSpeed=1;  // speed multiplier (changed by state)
+window._astroTargetSpeed=1;
+
+// Meteors
+const meteors=[];
+function newMeteor(){meteors.push({x:Math.random()*W,y:Math.random()*H*.4,len:70+Math.random()*140,spd:4+Math.random()*6,ang:Math.PI/4+(Math.random()-.5)*.7,a:1,life:1});}
+function newCluster(n){n=n||2+Math.floor(Math.random()*3);const bx=Math.random()*W,by=Math.random()*H*.3;for(let i=0;i<n;i++)meteors.push({x:bx+(Math.random()-.5)*160,y:by+(Math.random()-.5)*80,len:60+Math.random()*120,spd:4.5+Math.random()*6,ang:Math.PI/4+(Math.random()-.5)*.6,a:1,life:1});}
+function schedMeteor(){
+  const mul=window._astroSpeed||1;
+  const base=1800/mul;
+  const d=base+Math.random()*base*1.5;
+  setTimeout(()=>{
+    if(document.visibilityState!=='hidden'){Math.random()<.25?newCluster():newMeteor();}
+    schedMeteor();
+  },d);
+}
+schedMeteor();
+
+// Sparks (from clicks)
+const sparks=[];
+window._burst=function(x,y,n){
+  n=n||16;
+  for(let i=0;i<n;i++){
+    const ang=Math.random()*Math.PI*2,dist=30+Math.random()*70;
+    sparks.push({x,y,vx:Math.cos(ang)*dist*.02,vy:Math.sin(ang)*dist*.02,life:1,size:.5+Math.random()*2.5});
+  }
+  for(let i=0;i<8;i++){
+    const ang=Math.random()*Math.PI*2,dist=40+Math.random()*90;
+    const el=document.createElement('div');el.className='spark';
+    el.style.left=x+'px';el.style.top=y+'px';
+    el.style.setProperty('--sx',Math.cos(ang)*dist+'px');
+    el.style.setProperty('--sy',Math.sin(ang)*dist+'px');
+    document.body.appendChild(el);
+    setTimeout(()=>el.remove(),850);
+  }
+  newCluster(5+Math.floor(Math.random()*6));
+};
+
+// Mouse
+let mx=W/2,my=H/2;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY});
+document.addEventListener('click',e=>{window._burst(e.clientX,e.clientY,14)});
+
+// Draw helpers
+function circle(x,y,r,fill){ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();}
+
+function drawStars(ts){
+  const px=(mx-W/2)*.012,py=(my-H/2)*.012;
+  for(const s of stars){
+    s.a=s.ba+Math.sin(ts*s.ts+s.to)*.14;
+    s.a=Math.max(.04,Math.min(.92,s.a));
+    const wx=s.x+px*s.depth,wy=s.y+py*s.depth;
+    const cwx=wx<-60?W+60:wx>W+60?-60:wx;
+    const cwy=wy<-60?H+60:wy>H+60?-60:wy;
+    circle(cwx,cwy,s.r,`rgba(232,224,208,${s.a.toFixed(3)})`);
+    if(s.r>1&&s.a>.4){
+      const g=ctx.createRadialGradient(cwx,cwy,0,cwx,cwy,s.r*3);
+      g.addColorStop(0,`rgba(240,215,140,${(s.a*.25).toFixed(3)})`);
+      g.addColorStop(1,'rgba(240,215,140,0)');
+      circle(cwx,cwy,s.r*3,g);
+    }
+  }
+}
+
+function drawConstellations(ts){
+  const LIMIT=155,MAX=3;
+  const px=(mx-W/2)*.012,py=(my-H/2)*.012;
+  for(let i=0;i<stars.length;i++){
+    const a=stars[i],nb=[];
+    for(let j=0;j<stars.length;j++){
+      if(i===j)continue;
+      const dist=Math.hypot(a.x-b.x,a.y-b.y);
+      if(dist<LIMIT)nb.push({j,dist});
+    }
+    nb.sort((x,y)=>x.dist-y.dist);
+    for(const n of nb.slice(0,MAX)){
+      const b=stars[n.j];
+      const wave=Math.sin(ts*.0005+i*.38+n.j*.22)*.5+.5;
+      const la=(.15+wave*.11)*(1-n.dist/LIMIT);
+      ctx.beginPath();ctx.moveTo(a.x+px*a.depth,a.y+py*a.depth);
+      ctx.lineTo(b.x+px*b.depth,b.y+py*b.depth);
+      ctx.strokeStyle=`rgba(201,162,78,${la.toFixed(3)})`;
+      ctx.lineWidth=.4;ctx.stroke();
+    }
+  }
+}
+
+function drawAstrolabe(ts){
+  const cx=W/2,cy=H/2;
+  const tx=(mx-W/2)*.006,ty=(my-H/2)*.006;
+  const R=Math.min(W,H)*.4;
+  ctx.save();ctx.translate(cx+tx,cy+ty);ctx.globalAlpha=.1+Math.sin(ts*.00035)*.03;
+
+  // Rings
+  [[1,.36,1.8],[.9,.26,1],[.74,.16,.7],[.38,.32,1],[.18,.22,.6]].forEach(([s,alpha,lw])=>{
+    ctx.beginPath();ctx.arc(0,0,R*s,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(201,162,78,${alpha})`;ctx.lineWidth=lw;ctx.stroke();
+  });
+
+  // Ticks
+  for(let d=0;d<360;d+=6){
+    const rad=(d+rot*180/Math.PI)*Math.PI/180;
+    const maj=d%30===0,med=d%15===0&&!maj;
+    const ir=maj?.8:med?.825:.845,or=maj?.98:med?.96:.93;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(rad)*R*ir,Math.sin(rad)*R*ir);
+    ctx.lineTo(Math.cos(rad)*R*or,Math.sin(rad)*R*or);
+    ctx.strokeStyle=maj?'rgba(201,162,78,.42)':'rgba(201,162,78,.16)';
+    ctx.lineWidth=maj?1.1:.35;ctx.stroke();
+  }
+
+  // 八卦 around the outer ring
+  const trigrams=['☰','☷','☲','☵','☳','☴','☶','☱'];
+  for(let i=0;i<8;i++){
+    const rad=(i*Math.PI/4+rot)*1;
+    const tr=trigrams[i];
+    ctx.fillStyle='rgba(201,162,78,.4)';
+    ctx.font=`${R*.07}px "Noto Serif SC",serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(tr,Math.cos(rad)*R*.64,Math.sin(rad)*R*.64);
+  }
+
+  // Directions
+  const dirs=['北','','','东','','','南','','','西','',''];
+  for(let i=0;i<12;i++){
+    const rad=(i*30+rot*180/Math.PI)*Math.PI/180;
+    ctx.fillStyle='rgba(201,162,78,.42)';
+    ctx.font=`${R*.055}px "Noto Serif SC",serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    if(dirs[i])ctx.fillText(dirs[i],Math.cos(rad)*R*.5,Math.sin(rad)*R*.5);
+  }
+
+  // Cross
+  for(let i=0;i<8;i++){
+    const rad=i*Math.PI/4+rot;
+    const ir=i%2===0?.14:.18,or=i%2===0?.72:.62;
+    ctx.beginPath();
+    ctx.moveTo(Math.cos(rad)*R*ir,Math.sin(rad)*R*ir);
+    ctx.lineTo(Math.cos(rad)*R*or,Math.sin(rad)*R*or);
+    ctx.strokeStyle=`rgba(201,162,78,${i%2===0?.14:.07})`;
+    ctx.lineWidth=i%2===0?.45:.25;ctx.stroke();
+  }
+
+  // Center star
+  const sr=R*.07;
+  for(let i=0;i<8;i++){
+    const rad=i*Math.PI/4+rot*.5;
+    ctx.beginPath();ctx.moveTo(0,0);
+    ctx.lineTo(Math.cos(rad)*sr,Math.sin(rad)*sr);
+    ctx.strokeStyle='rgba(201,162,78,.28)';ctx.lineWidth=.35;ctx.stroke();
+  }
+  circle(0,0,R*.018,'rgba(212,168,67,.55)');
+
+  // 魂灯 — tiny floating lantern dots on the outer ring
+  for(let i=0;i<4;i++){
+    const a=rot*1.3+i*Math.PI/2;
+    const lx=Math.cos(a)*R*.86,ly=Math.sin(a)*R*.86;
+    const glow=ctx.createRadialGradient(lx,ly,0,lx,ly,R*.04);
+    glow.addColorStop(0,'rgba(240,200,120,.5)');
+    glow.addColorStop(1,'rgba(240,200,120,0)');
+    circle(lx,ly,R*.04,glow);
+    circle(lx,ly,2,'rgba(250,220,160,.7)');
+  }
+
+  ctx.restore();
+}
+
+function drawMeteors(){
+  for(const m of meteors){
+    const dx=Math.cos(m.ang)*m.len,dy=Math.sin(m.ang)*m.len;
+    const grad=ctx.createLinearGradient(m.x,m.y,m.x-dx,m.y-dy);
+    grad.addColorStop(0,`rgba(250,240,215,${m.a})`);
+    grad.addColorStop(.25,`rgba(240,215,140,${m.a*.48})`);
+    grad.addColorStop(1,'rgba(240,215,140,0)');
+    ctx.beginPath();ctx.moveTo(m.x,m.y);ctx.lineTo(m.x-dx,m.y-dy);
+    ctx.strokeStyle=grad;ctx.lineWidth=1.5;ctx.stroke();
+    const hg=ctx.createRadialGradient(m.x,m.y,0,m.x,m.y,4);
+    hg.addColorStop(0,`rgba(250,240,215,${m.a})`);
+    hg.addColorStop(1,'rgba(250,240,215,0)');
+    circle(m.x,m.y,4,hg);
+  }
+}
+
+function drawSparks(){
+  for(let i=sparks.length-1;i>=0;i--){
+    const s=sparks[i];
+    s.x+=s.vx;s.y+=s.vy;s.life-=.02;
+    s.vx*=.95;s.vy*=.95;
+    if(s.life<=0){sparks.splice(i,1);continue}
+    circle(s.x,s.y,s.size,`rgba(240,215,140,${s.life.toFixed(3)})`);
+  }
+}
+
+// Smooth speed transition
+function updateSpeed(){
+  const cur=window._astroSpeed||1;
+  const tgt=window._astroTargetSpeed||1;
+  if(Math.abs(cur-tgt)>.005){
+    window._astroSpeed=cur+(tgt-cur)*.06;
+  }else{
+    window._astroSpeed=tgt;
+  }
+}
+
+function animate(ts){
+  ctx.clearRect(0,0,W,H);
+  updateSpeed();
+  rot+=.0006*window._astroSpeed;
+  if(rot>Math.PI*2)rot-=Math.PI*2;
+
+  drawStars(ts);
+  drawConstellations(ts);
+  drawAstrolabe(ts);
+  drawSparks();
+
+  for(let i=meteors.length-1;i>=0;i--){
+    const m=meteors[i];
+    m.x+=Math.cos(m.ang)*m.spd;
+    m.y+=Math.sin(m.ang)*m.spd;
+    m.life-=.007;m.a=m.life;
+    if(m.life<=0||m.x>W+150||m.y>H+150||m.x<-150)meteors.splice(i,1);
+  }
+  drawMeteors();
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
+})();
+
+/* ==========================================
+   🔮 起卦逻辑
+   ========================================== */
+const fortunes={
+  fire:{
+    element:'火卦 · 離',trigram:'☲',
+    title:'離 火 昭 昭',
+    poetry:'丙午之年，火德当空。\n二十岁的你如烈焰般耀眼，\n热情不灭，光芒万丈。\n凡所行之路，皆有光明相随。\n新的一岁，愿你如火般热烈生长。',
+    blessing:'愿 你 热 烈 生 长 ， 不 负 韶 华 🔥',
+    theme:'theme-fire'
+  },
+  earth:{
+    element:'土卦 · 坤',trigram:'☷',
+    title:'坤 土 厚 德',
+    poetry:'地势坤，君子以厚德载物。\n二十岁的你根深叶茂，\n脚踏实地，每一步都稳健有力。\n所愿皆生根发芽，所行皆落地开花。\n新的一岁，愿你如大地般丰盈沉静。',
+    blessing:'愿 你 沉 静 如 山 ， 丰 盈 似 秋 ⛰️',
+    theme:'theme-earth'
+  },
+  water:{
+    element:'水卦 · 坎',trigram:'☵',
+    title:'坎 水 灵 澈',
+    poetry:'上善若水，利万物而不争。\n二十岁的你智慧流淌，\n随心而行，遇山开路，遇海化龙。\n前路辽阔，皆可抵达。\n新的一岁，愿你如水般清澈自由。',
+    blessing:'愿 你 清 澈 如 泉 ， 奔 涌 向 海 💧',
+    theme:'theme-water'
+  },
+  // ── 1% 命定之星 — 她生日专属 ──
+  special:{
+    element:'生辰本命 · 双子歸位',trigram:'♊',
+    title:'命 定 之 星',
+    poetry:'两千零六年五月廿五，\n双子星辉落入凡尘。\n\n你诞于丙戌之年，火德为命，\n今逢丙午之岁，双火相映。\n\n二十载星轨流转，\n紫微垣中自有定数。\n你生来便是独一无二的星辰，\n不必卜算，已是最好。\n\n生辰吉乐，命定之星 ✨',
+    blessing:'愿 你 的 双 子 之 光 ， 永 远 璀 璨 如 初 ♊',
+    theme:'theme-special'
+  }
+};
+
+function pickFortune(){
+  const r=Math.random()*100;
+  if(r<1)return'special';   // ✦ 1% 命定之星
+  if(r<34)return'fire';     // 33%
+  if(r<67)return'earth';    // 33%
+  return'water';            // 33%
+}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function startDivine(){
+  // 1. Show divining screen
+  showScreen('divining-screen');
+
+  // 2. Speed up astrolabe
+  window._astroTargetSpeed=6;
+
+  // 3. Burst effects
+  window._burst(innerWidth/2,innerHeight/2,25);
+  setTimeout(()=>window._burst(innerWidth*.35,innerHeight*.4,12),600);
+  setTimeout(()=>window._burst(innerWidth*.65,innerHeight*.35,14),1100);
+
+  // 4. After 3.2s, reveal result
+  setTimeout(()=>{
+    const key=pickFortune();
+    const f=fortunes[key];
+
+    // Slow down astrolabe
+    window._astroTargetSpeed=.4;
+
+    // Update result screen
+    const rs=document.getElementById('result-screen');
+    rs.className='screen active '+f.theme;
+    document.getElementById('res-trigram').textContent=f.trigram;
+    document.getElementById('res-title').textContent=f.title;
+    document.getElementById('res-element').textContent=f.element;
+    document.getElementById('res-poetry').textContent=f.poetry;
+    document.getElementById('res-blessing').textContent=f.blessing;
+
+    // Show result screen
+    showScreen('result-screen');
+    // re-trigger animation
+    const tg=document.getElementById('res-trigram');
+    tg.style.animation='none';tg.offsetHeight;
+    tg.style.animation='resultReveal .6s cubic-bezier(.175,.885,.32,1.275) forwards';
+
+    // Celebration burst
+    window._burst(innerWidth/2,innerHeight/2,30);
+    setTimeout(()=>window._burst(innerWidth*.3,innerHeight*.5,10),300);
+    setTimeout(()=>window._burst(innerWidth*.7,innerHeight*.45,12),500);
+
+    // ✦ Special: extra celebration!
+    if(key==='special'){
+      setTimeout(()=>window._burst(innerWidth/2,innerHeight/2,50),600);
+      setTimeout(()=>window._burst(innerWidth*.2,innerHeight*.3,15),800);
+      setTimeout(()=>window._burst(innerWidth*.8,innerHeight*.35,15),900);
+      setTimeout(()=>window._burst(innerWidth*.5,innerHeight*.6,20),1100);
+      setTimeout(()=>window._burst(innerWidth*.35,innerHeight*.7,18),1300);
+    }
+  },3200);
+}
+
+// Initial
+window._astroTargetSpeed=1;
+
+// Initial welcome burst
+setTimeout(()=>window._burst(innerWidth/2,innerHeight/2,18),500);
+</script>
+</body>
+</html>
