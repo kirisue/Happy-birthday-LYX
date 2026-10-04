@@ -399,6 +399,7 @@ function drawConstellations(ts){
     const a=stars[i],nb=[];
     for(let j=0;j<stars.length;j++){
       if(i===j)continue;
+      const b=stars[j];
       const dist=Math.hypot(a.x-b.x,a.y-b.y);
       if(dist<LIMIT)nb.push({j,dist});
     }
